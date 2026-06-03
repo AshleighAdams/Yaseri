@@ -1,0 +1,35 @@
+<Solution>
+  <Folder Name="/SolutionItems/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="CODE_OF_CONDUCT.md" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="global.json" />
+    <File Path="LICENSE" />
+    <File Path="NuGet.Config" />
+    <File Path="README.md" />
+    <File Path="SECURITY.md" />
+    <File Path="src/Yaseri.Json/Yaseri.Json.csproj" />
+  </Folder>
+  <Folder Name="/SolutionItems/GitHub/">
+    <File Path=".github/codecov.yml" />
+    <File Path=".github/dependabot.yml" />
+  </Folder>
+  <Folder Name="/SolutionItems/GitHub/Templates/">
+    <File Path=".github/ISSUE_TEMPLATE/BugReport.yml" />
+    <File Path=".github/ISSUE_TEMPLATE/Feature.md" />
+    <File Path=".github/pull_request_template.md" />
+  </Folder>
+  <Folder Name="/SolutionItems/GitHub/Workflows/">
+    <File Path=".github/continuous-delivery.yml" />
+    <File Path=".github/continuous-integration.yml" />
+    <File Path=".github/deploy-release.yml" />
+    <File Path=".github/regenerate-actions.sh" />
+    <File Path=".github/shared.yml" />
+  </Folder>
+  <Project Path="src/Yaseri.Core/Yaseri.Core.csproj" />
+  <Project Path="src/Yaseri.Json/Yaseri.Json.csproj" />
+  <Project Path="tests/UnitTests/UnitTests.csproj" />
+</Solution>
