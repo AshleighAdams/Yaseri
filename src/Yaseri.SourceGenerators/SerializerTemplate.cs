@@ -9,6 +9,10 @@ public record struct PropertyMetadata
 	public string PropertyName { get; set; }
 	public string Key { get; set; }
 	public bool Obsolete { get; set; }
+	public string? FormatHint { get; set; }
+	public List<string>? CustomHints { get; set; }
+	public string? ConstraintMin { get; set; }
+	public string? ConstraintMax { get; set; }
 }
 
 public static class SerializerTemplate
@@ -75,6 +79,7 @@ public static class SerializerTemplate
 		string? baseClass,
 		string fullTypeName,
 		string typeName,
+		string writeInline,
 		IEnumerable<PropertyMetadata> properties)
 	{
 		var readers = new StringBuilder();
@@ -85,12 +90,60 @@ public static class SerializerTemplate
 
 		foreach (var prop in properties)
 		{
-			var localName = "@_" + prop.PropertyName.ToLowerInvariant();
+			var readHintsSb = new StringBuilder();
+			var writeHintsSb = new StringBuilder();
 
+			var hasUsageHint =
+				prop.CustomHints is not null ||
+				prop.ConstraintMin is not null ||
+				prop.ConstraintMax is not null;
+			if (hasUsageHint)
+			{
+				var customHints = prop.CustomHints is not null ? string.Join(", ", prop.CustomHints) : string.Empty;
+				hints.AppendLine(
+					$$"""
+					public static readonly PrimitiveUsageHint @_{{prop.PropertyName}}UsageHint = new()
+					{
+						MinimumConstraint = {{prop.ConstraintMin ?? "null"}},
+						MaximumConstraint = {{prop.ConstraintMax ?? "null"}},
+						CustomHints = new global::System.Collections.Generic.SortedSet<string>()
+						{
+							{{customHints}}
+						},
+					};
+					""");
+				readHintsSb.AppendLine(
+					$"""
+					reader.ValueHint(@_YaseriContext.@_{prop.PropertyName}UsageHint);
+					""");
+				writeHintsSb.AppendLine(
+					$"""
+					writer.ValueHint(@_YaseriContext.@_{prop.PropertyName}UsageHint);
+					""");
+			}
+
+			if (prop.FormatHint is not null)
+			{
+				hints.AppendLine(
+					$$"""
+					public static readonly string @_{{prop.PropertyName}}FormatHint = {{prop.FormatHint}};
+					""");
+				readHintsSb.AppendLine(
+					$"""
+					reader.ValueHint(@_YaseriContext.@_{prop.PropertyName}FormatHint);
+					""");
+				writeHintsSb.AppendLine(
+					$"""
+					writer.ValueHint(@_YaseriContext.@_{prop.PropertyName}FormatHint);
+					""");
+			}
+
+			var localName = "@_" + prop.PropertyName.ToLowerInvariant();
 			readers.AppendLine(
 				$$"""
-						if (global::System.MemoryExtensions.SequenceEqual(key, "{{prop.Key.ToLiteral()}}"u8))
+						if (global::System.MemoryExtensions.SequenceEqual(key, {{prop.Key}}u8))
 						{
+							{{readHintsSb}}
 							if (!reader.TryReadValue(out {{prop.FullType}} {{localName}}))
 							{
 								value = @_YaseriContext.FailValue;
@@ -109,7 +162,8 @@ public static class SerializerTemplate
 				$$"""
 						if (writeDefault || value.{{prop.PropertyName}} != @_YaseriContext.DefaultValue.{{prop.PropertyName}})
 						{
-							writer.WriteKey("{{prop.Key.ToLiteral()}}"u8);
+							writer.WriteKey({{prop.Key}}u8);
+							{{writeHintsSb}}
 							writer.WriteValue(value.{{prop.PropertyName}});
 						}
 				""");
@@ -184,7 +238,7 @@ public static class SerializerTemplate
 				{
 					writer.ValueHint(@_YaseriContext.TypeHint);
 					bool writeDefault = writer.ShouldWriteDefaultValues;
-					writer.WriteStartObject();
+					writer.WriteStartObject(writeInline: {{writeInline}});
 
 					{{writers}}
 

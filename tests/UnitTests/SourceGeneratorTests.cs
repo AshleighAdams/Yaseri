@@ -18,12 +18,16 @@ internal sealed partial class TestObject
 	[PropertyName("perc")]
 	public float Percent { get; set; } = 0.5f;
 
-	public bool Cool { get; set; } = false;
+	[Usage("Texture")]
+	public string Cool { get; set; } = "MyFile.png";
+
+	[Format("text/json")]
+	public string SomeJson { get; set; } = "{null, true}";
 
 	public IReadOnlyList<ArrayItem> CustomArray { get; set; } = Array.Empty<ArrayItem>();
 }
 
-[YaseriSerializable]
+[YaseriSerializable(WriteInline = true)]
 internal sealed partial class ArrayItem
 {
 	public int Thing { get; set; }
@@ -58,17 +62,12 @@ public class SourceGeneratorTests
 			"""
 			{
 				"perc": 0.5,
-				"Cool": false,
+				"Cool": "MyFile.png",
+				"SomeJson": "{null, true}",
 				"CustomArray": [
-					{
-						"Thing": 1,
-						"OtherThing": 2,
-					},
-					{
-						"Thing": 3,
-						"OtherThing": 4,
-					},
-				]
+					{"Thing": 1, "OtherThing": 2},
+					{"Thing": 3, "OtherThing": 4},
+				],
 			}
 			""";
 

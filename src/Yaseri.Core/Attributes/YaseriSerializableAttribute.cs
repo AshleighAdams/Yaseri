@@ -11,4 +11,6 @@ public sealed class YaseriSerializableAttribute : Attribute
 	public YaseriSerializableAttribute()
 	{
 	}
+
+	public bool WriteInline { get; set; }
 }

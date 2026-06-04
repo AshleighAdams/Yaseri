@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,8 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 {
 	public void Initialize(GeneratorInitializationContext context)
 	{
-		//if (!Debugger.IsAttached)
-		//	Debugger.Launch();
+		//if (!System.Diagnostics.Debugger.IsAttached)
+		//	System.Diagnostics.Debugger.Launch();
 
 		//context.RegisterForPostInitialization((i) => i.AddSource("ComponentSerializableAttribute.g.cs", AttributeSource));
 
@@ -29,7 +30,11 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 		var attributeIgnore = context.Compilation.GetTypeByMetadataName("Yaseri.Attributes.IgnoreAttribute")!;
 		var attributePropName = context.Compilation.GetTypeByMetadataName("Yaseri.Attributes.PropertyNameAttribute")!;
 		var attributeUsage = context.Compilation.GetTypeByMetadataName("Yaseri.Attributes.UsageAttribute")!;
+		var attributeFormat = context.Compilation.GetTypeByMetadataName("Yaseri.Attributes.FormatAttribute")!;
+		var attributeConstraints = context.Compilation.GetTypeByMetadataName("Yaseri.Attributes.ConstraintsAttribute")!;
 		var attributeObsolete = context.Compilation.GetTypeByMetadataName("System.ObsoleteAttribute")!;
+
+		string writeInline = "false";
 
 		foreach (var (typeDef, classDef) in receiver.CandidateTypes)
 		{
@@ -47,10 +52,20 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 					typeDef.Name));
 			}
 
-			//AttributeData attributeData = typeDef
-			//	.GetAttributes()
-			//	.Single(ad => ad.AttributeClass!.Equals(attributeSymbol, SymbolEqualityComparer.Default));
-			//var serializedName = attributeData.ConstructorArguments[0].Value!.ToString();
+			AttributeData attributeData = typeDef
+				.GetAttributes()
+				.Single(ad => ad.AttributeClass!.Equals(attributeSymbol, SymbolEqualityComparer.Default));
+			foreach (var kv in attributeData.NamedArguments)
+			{
+				switch (kv.Key)
+				{
+					case "WriteInline":
+						writeInline = kv.Value.ToCSharpString();
+						break;
+					default:
+						break;
+				}
+			}
 
 			var sb = new StringBuilder();
 
@@ -64,17 +79,77 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 				if (property.DeclaredAccessibility != Accessibility.Public) continue;
 				if (property.IsStatic != false) continue;
 				if (property.SetMethod is null) continue;
-				if (property.GetAttributes().Any(ad => ad.AttributeClass!.Equals(attributeIgnore, SymbolEqualityComparer.Default))) continue;
+
+				bool ignore = false;
+				bool obsolete = false;
+				string? key = null;
+				string? format = null;
+				string? min = null;
+				string? max = null;
+				List<string>? usage = null;
+
+				foreach (var attribute in property.GetAttributes())
+				{
+					if (attribute.AttributeClass is not INamedTypeSymbol attributeClass)
+						continue;
+
+					if (attributeClass.Equals(attributeIgnore, SymbolEqualityComparer.Default))
+					{
+						ignore = true;
+						break;
+					}
+					else if (attributeClass.Equals(attributeObsolete, SymbolEqualityComparer.Default))
+					{
+						obsolete = true;
+					}
+					else if (attributeClass.Equals(attributePropName, SymbolEqualityComparer.Default))
+					{
+						key = attribute.ConstructorArguments[0].ToCSharpString();
+					}
+					else if (attributeClass.Equals(attributeFormat, SymbolEqualityComparer.Default))
+					{
+						format = attribute.ConstructorArguments[0].ToCSharpString();
+					}
+					else if (attributeClass.Equals(attributeUsage, SymbolEqualityComparer.Default))
+					{
+						var hint = attribute.ConstructorArguments[0].ToCSharpString();
+						usage ??= [];
+						usage.Add(hint);
+					}
+					else if (attributeClass.Equals(attributeConstraints, SymbolEqualityComparer.Default))
+					{
+						foreach (var kv in attribute.NamedArguments)
+						{
+							switch (kv.Key)
+							{
+								case "Minimum":
+									min = kv.Value.ToCSharpString();
+									break;
+								case "Maximum":
+									max = kv.Value.ToCSharpString();
+									break;
+								default:
+									break;
+							}
+						}
+					}
+				}
+
+				if (ignore)
+					continue;
 
 				var propType = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-				var obsolete = property.GetAttributes().Any(ad => ad.AttributeClass!.Equals(attributeObsolete, SymbolEqualityComparer.Default));
 
 				propertiesList.Add(new()
 				{
 					PropertyName = property.Name,
-					Key = property.Name,
+					Key = key ?? $"\"{property.Name.ToLiteral()}\"",
 					FullType = propType,
 					Obsolete = obsolete,
+					FormatHint = format,
+					CustomHints = usage,
+					ConstraintMin = min,
+					ConstraintMax = max,
 				});
 			}
 
@@ -105,7 +180,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 			{
 				context.ReportDiagnostic(Diagnostic.Create(
 					new DiagnosticDescriptor(
-						"PX0001",
+						"YASI0002",
 						"Accessibility must be public or internal",
 						"Component {0} is {1}. All serializable components must be public or internal.",
 						"error",
@@ -122,6 +197,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 				baseClass,
 				fullTypeName,
 				typeDef.Name,
+				writeInline,
 				propertiesList);
 
 			context.AddCode($"{typeDef.Name}.g.cs", sb.ToString());
