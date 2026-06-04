@@ -45,3 +45,9 @@ public partial interface IPrimitiveWriter
 		WriteValue(ColorTranslator.ToHtml(value));
 	}
 }
+
+public partial class GenericPrimitive : IGenericPrimitive<Color>
+{
+	bool IGenericPrimitive<Color>.TryReadValue(IPrimitiveReader reader, out Color value) => reader.TryReadValue(out value);
+	void IGenericPrimitive<Color>.WriteValue(IPrimitiveWriter writer, in Color value) => writer.WriteValue(value);
+}

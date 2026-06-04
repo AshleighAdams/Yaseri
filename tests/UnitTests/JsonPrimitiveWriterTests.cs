@@ -6,6 +6,9 @@ using FluentAssertions;
 using Yaseri.Json;
 
 using Xunit;
+using System.Numerics;
+using Yaseri;
+using System.Collections.Generic;
 
 namespace UnitTests;
 
@@ -146,6 +149,67 @@ public class JsonPrimitiveWriterTests
 			{
 				"empty-str": "",
 				"simple-str": "hello",
+			}
+			""";
+
+		json.Should().Be(expected);
+	}
+
+	[Fact]
+	public void CanWriteVectors()
+	{
+		using var jsonWriter = new JsonPrimitiveWriter();
+		IPrimitiveWriter writer = jsonWriter;
+
+		writer.WriteStartObject();
+
+		writer.WriteKey("vec2"u8);
+		writer.WriteValue(new Vector2(1, 2));
+
+		writer.WriteKey("vec3"u8);
+		writer.WriteValue(new Vector3(3, 4, 5));
+
+		writer.WriteKey("vec4"u8);
+		writer.WriteValue(new Vector4(6, 7, 8, 9));
+
+		writer.WriteEndObject();
+
+		string json = jsonWriter.ToString();
+		string expected =
+			"""
+			{
+				"vec2": [1, 2],
+				"vec3": [3, 4, 5],
+				"vec4": [6, 7, 8, 9],
+			}
+			""";
+
+		json.Should().Be(expected);
+	}
+
+	[Fact]
+	public void CanWriteArrays()
+	{
+		using var jsonWriter = new JsonPrimitiveWriter();
+		IPrimitiveWriter writer = jsonWriter;
+
+		writer.WriteStartObject();
+
+		writer.WriteKey("list"u8);
+		writer.WriteValue(new List<int>() { 1, 2, 3, 4 });
+
+		writer.WriteEndObject();
+
+		string json = jsonWriter.ToString();
+		string expected =
+			"""
+			{
+				"list": [
+					1,
+					2,
+					3,
+					4,
+				],
 			}
 			""";
 

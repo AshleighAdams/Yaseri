@@ -7,4 +7,7 @@ public interface IPrimitive<T>
 {
 	static abstract bool TryReadValue(IPrimitiveReader reader, out T value);
 	static abstract void WriteValue(IPrimitiveWriter writer, in T value);
+
+	bool InstancedTryReadValue(IPrimitiveReader reader, out T value);
+	void InstancedWriteValue(IPrimitiveWriter writer, in T value);
 }

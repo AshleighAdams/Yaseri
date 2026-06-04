@@ -170,6 +170,13 @@ public static class SerializerTemplate
 					value = ret;
 					return true;
 				}
+
+				bool global::Yaseri.IPrimitive<{{typeName}}>.InstancedTryReadValue(
+					global::Yaseri.IPrimitiveReader reader,
+					out {{fullTypeName}} value)
+				{
+					return TryReadValue(reader, out value);
+				}
 			
 				public static void WriteValue(
 					global::Yaseri.IPrimitiveWriter writer,
@@ -182,6 +189,13 @@ public static class SerializerTemplate
 					{{writers}}
 
 					writer.WriteEndObject();
+				}
+
+				void global::Yaseri.IPrimitive<{{typeName}}>.InstancedWriteValue(
+					global::Yaseri.IPrimitiveWriter writer,
+					in {{fullTypeName}} value)
+				{
+					WriteValue(writer, value);
 				}
 			}
 			""");

@@ -46,3 +46,4 @@ public partial interface IPrimitiveReader
 		return T.TryReadValue(this, out value);
 	}
 };
+

@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Numerics;
 
 namespace Yaseri;
@@ -64,4 +65,10 @@ public partial interface IPrimitiveWriter
 		WriteValue(value.Z);
 		WriteEndArray();
 	}
+}
+
+public partial class GenericPrimitive : IGenericPrimitive<Vector3>
+{
+	bool IGenericPrimitive<Vector3>.TryReadValue(IPrimitiveReader reader, out Vector3 value) => reader.TryReadValue(out value);
+	void IGenericPrimitive<Vector3>.WriteValue(IPrimitiveWriter writer, in Vector3 value) => writer.WriteValue(value);
 }

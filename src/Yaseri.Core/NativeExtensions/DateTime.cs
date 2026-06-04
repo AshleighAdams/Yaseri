@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.Globalization;
 
 namespace Yaseri;
@@ -42,4 +43,10 @@ public partial interface IPrimitiveWriter
 		ValueHint(Hints.TypeHint);
 		WriteValue(value.ToString("O"));
 	}
+}
+
+public partial class GenericPrimitive : IGenericPrimitive<DateTime>
+{
+	bool IGenericPrimitive<DateTime>.TryReadValue(IPrimitiveReader reader, out DateTime value) => reader.TryReadValue(out value);
+	void IGenericPrimitive<DateTime>.WriteValue(IPrimitiveWriter writer, in DateTime value) => writer.WriteValue(value);
 }
