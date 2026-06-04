@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net7.0</TargetFramework>
     <LangVersion>11.0</LangVersion>
+    <IsAotCompatible>true</IsAotCompatible>
     <!-- 1591: Ignore missing inline documentation. *reenabled* -->
     <!-- CA1062: Prefer T? for possible nulls. -->
     <!-- CA2225: Don't want operators to have methods.. -->

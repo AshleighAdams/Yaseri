@@ -127,7 +127,6 @@ public class JsonPrimitiveSerializerTests
 		int minCount = Math.Min(expectedTokens.Count, actualTokens.Count);
 		for (int i = 0; i < minCount; i++)
 		{
-			//actualTokens[i].Should().Be<ExpectedJsonToken>(expectedTokens[i], Comparer<
 			bool tokenEquals = actualTokens[i] == expectedTokens[i];
 			tokenEquals.Should().BeTrue();
 			if (!tokenEquals)

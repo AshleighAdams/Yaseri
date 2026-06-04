@@ -3,9 +3,13 @@ using System.Globalization;
 
 namespace Yaseri;
 
-file class TypeNames
+file class Hints
 {
-	public static string DateTimeOffset { get; } = "System.DateTimeOffset";
+	public static PrimitiveTypeHint TypeHint = new()
+	{
+		TypeName = "System.DateTimeOffset",
+		Type = typeof(DateTime),
+	};
 }
 
 public partial interface IPrimitiveReader
@@ -14,16 +18,16 @@ public partial interface IPrimitiveReader
 	{
 		value = default;
 
-		NextValueHint(PrimitiveHintType.Type, TypeNames.DateTimeOffset);
+		ValueHint(Hints.TypeHint);
 		if (!TryReadValue(out string valueStr))
 		{
-			LastError = "Failed to read color string";
+			LastError = "Expected string";
 			return false;
 		}
 
 		if (!DateTimeOffset.TryParseExact(valueStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out value))
 		{
-			LastError = "Failed to parse datetime string";
+			LastError = "Failed to parse";
 			return false;
 		}
 
@@ -35,7 +39,7 @@ public partial interface IPrimitiveWriter
 {
 	void WriteValue(DateTimeOffset value)
 	{
-		NextValueHint(PrimitiveHintType.Type, TypeNames.DateTimeOffset);
+		ValueHint(Hints.TypeHint);
 		WriteValue(value.ToString("O"));
 	}
 }

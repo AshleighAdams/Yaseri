@@ -7,6 +7,12 @@ using System.Text;
 
 namespace Yaseri.Json;
 
+public record struct JsonPrimitiveWriterOptions
+{
+	public JsonPrimitiveWriterOptions() { }
+	public bool WriteTrailingCommas { get; set; } = true;
+	public bool Indent { get; set; } = true;
+}
 
 public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 {
@@ -14,15 +20,18 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 	private MemoryStream Stream { get; } = new();
 	private readonly byte[] ValueFormatBuffer = new byte[512];
 
-	public JsonPrimitiveWriter()
+	public JsonPrimitiveWriter(JsonPrimitiveWriterOptions? options = default)
 	{
+		var opts = options ?? new();
+		WriteTrailingCommas = opts.WriteTrailingCommas;
+		Indent = opts.Indent;
 	}
 
 	public bool WriteTrailingCommas { get; set; } = true;
-	public bool WriteInline { get; set; }
+	public bool Indent { get; set; }
 
 	public long CurrentPosition => Stream.Position;
-	public bool ShouldWriteDefaultValues => false;
+	public bool ShouldWriteDefaultValues { get; set; }
 
 	private enum WriteState
 	{
@@ -38,7 +47,7 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 	private int WriteInlineDepth { get; set; }
 	private int Depth => StateStack.Count;
 
-	private bool WritingInline => WriteInlineDepth > 0;
+	private bool WritingInline => !Indent || WriteInlineDepth > 0;
 
 	private Stack<WriteState> StateStack { get; } = new();
 	private WriteState State { get; set; } = WriteState.Value;
@@ -131,10 +140,6 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 			default:
 				throw new NotImplementedException();
 		}
-	}
-
-	public void NextValueHint(PrimitiveHintType type, string value)
-	{
 	}
 
 	public void WriteStartObject(bool writeInline = false)

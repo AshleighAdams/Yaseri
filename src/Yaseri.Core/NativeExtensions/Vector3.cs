@@ -1,10 +1,15 @@
+using System;
 using System.Numerics;
 
 namespace Yaseri;
 
-file class TypeNames
+file class Hints
 {
-	public static string Vector3 { get; } = "System.Numerics.Vector3";
+	public static PrimitiveTypeHint TypeHint = new()
+	{
+		TypeName = "System.Numerics.Vector3",
+		Type = typeof(DateTime),
+	};
 }
 
 public partial interface IPrimitiveReader
@@ -13,7 +18,7 @@ public partial interface IPrimitiveReader
 	{
 		value = new Vector3();
 
-		NextValueHint(PrimitiveHintType.Type, TypeNames.Vector3);
+		ValueHint(Hints.TypeHint);
 		if (!TryReadStartArray())
 		{
 			LastError = "Expected array start for Vector3";
@@ -52,7 +57,7 @@ public partial interface IPrimitiveWriter
 {
 	void WriteValue(Vector3 value)
 	{
-		NextValueHint(PrimitiveHintType.Type, TypeNames.Vector3);
+		ValueHint(Hints.TypeHint);
 		WriteStartArray(writeInline: true);
 		WriteValue(value.X);
 		WriteValue(value.Y);

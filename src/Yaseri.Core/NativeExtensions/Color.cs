@@ -1,11 +1,14 @@
 using System.Drawing;
-using System.Numerics;
 
 namespace Yaseri;
 
-file class TypeNames
+file class Hints
 {
-	public static string Color { get; } = "System.Drawing.Color";
+	public static PrimitiveTypeHint TypeHint = new()
+	{
+		TypeName = "System.Drawing.Color",
+		Type = typeof(Color),
+	};
 }
 
 public partial interface IPrimitiveReader
@@ -14,7 +17,7 @@ public partial interface IPrimitiveReader
 	{
 		value = new Color();
 
-		NextValueHint(PrimitiveHintType.Type, TypeNames.Color);
+		ValueHint(Hints.TypeHint);
 		if (!TryReadValue(out string colorStr))
 		{
 			LastError = "Failed to read color string";
@@ -38,7 +41,7 @@ public partial interface IPrimitiveWriter
 {
 	void WriteValue(Color value)
 	{
-		NextValueHint(PrimitiveHintType.Type, TypeNames.Color);
+		ValueHint(Hints.TypeHint);
 		WriteValue(ColorTranslator.ToHtml(value));
 	}
 }

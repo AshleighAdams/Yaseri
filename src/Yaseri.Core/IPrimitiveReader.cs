@@ -6,7 +6,10 @@ public partial interface IPrimitiveReader
 {
 	long CurrentPosition { get; }
 	string? LastError { get; set; }
-	void NextValueHint(PrimitiveHintType type, string value);
+
+	void ValueHint(PrimitiveTypeHint typeHint) {}
+	void ValueHint(PrimitiveUsageHint usageHint) {}
+	void ValueHint(string format) {}
 
 	bool TryReadStartObject();
 	bool TryReadKey(ReadOnlySpan<byte> expectedKey);
@@ -40,8 +43,6 @@ public partial interface IPrimitiveReader
 	bool TryReadValue<T>(out T value)
 		where T : IPrimitive<T>
 	{
-		if (typeof(T).FullName is string typeName)
-			NextValueHint(PrimitiveHintType.Type, typeName);
 		return T.TryReadValue(this, out value);
 	}
 };

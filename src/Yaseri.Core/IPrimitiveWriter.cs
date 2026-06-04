@@ -6,7 +6,10 @@ public partial interface IPrimitiveWriter
 {
 	long CurrentPosition { get; }
 	bool ShouldWriteDefaultValues { get; }
-	void NextValueHint(PrimitiveHintType type, string value);
+
+	void ValueHint(PrimitiveTypeHint hint) { }
+	void ValueHint(PrimitiveUsageHint hint) { }
+	void ValueHint(string format) { }
 
 	void WriteStartObject(bool writeInline = false);
 	void WriteKey(ReadOnlySpan<byte> key);
@@ -39,8 +42,6 @@ public partial interface IPrimitiveWriter
 	void WriteValue<T>(in T value)
 		where T : IPrimitive<T>
 	{
-		if (typeof(T).FullName is string typeName)
-			NextValueHint(PrimitiveHintType.Type, typeName);
 		T.WriteValue(this, value);
 	}
 };

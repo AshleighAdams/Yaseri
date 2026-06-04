@@ -4,13 +4,19 @@ using System.IO;
 
 namespace Yaseri.Json;
 
+public record struct JsonPrimitiveReaderOptions
+{
+	public JsonPrimitiveReaderOptions() { }
+}
+
 public sealed class JsonPrimitiveReader : IPrimitiveReader
 {
 	private JsonTokenizer Tokenizer { get; }
 	private string Filename { get; set; }
 
-	public JsonPrimitiveReader(ReadOnlyMemory<byte> jsonSource, string filename)
+	public JsonPrimitiveReader(ReadOnlyMemory<byte> jsonSource, string filename, JsonPrimitiveReaderOptions? options = default)
 	{
+		options ??= new();
 		Tokenizer = new(jsonSource);
 		Filename = filename;
 	}
@@ -104,10 +110,6 @@ public sealed class JsonPrimitiveReader : IPrimitiveReader
 		}
 		else
 			State = ParseState.Complete;
-	}
-
-	public void NextValueHint(PrimitiveHintType type, string value)
-	{
 	}
 
 	public bool TryReadStartObject()
