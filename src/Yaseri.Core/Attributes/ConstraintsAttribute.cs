@@ -8,4 +8,5 @@ public sealed class ConstraintsAttribute : Attribute
 {
 	public object? Minimum { get; init; }
 	public object? Maximum { get; init; }
+	public object? Step { get; init; }
 }

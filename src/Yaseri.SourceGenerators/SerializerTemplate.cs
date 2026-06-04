@@ -13,6 +13,7 @@ public record struct PropertyMetadata
 	public List<string>? CustomHints { get; set; }
 	public string? ConstraintMin { get; set; }
 	public string? ConstraintMax { get; set; }
+	public string? ConstraintStep { get; set; }
 }
 
 public static class SerializerTemplate
@@ -106,6 +107,7 @@ public static class SerializerTemplate
 					{
 						MinimumConstraint = {{prop.ConstraintMin ?? "null"}},
 						MaximumConstraint = {{prop.ConstraintMax ?? "null"}},
+						StepConstraint = {{prop.ConstraintStep ?? "null"}},
 						CustomHints = new global::System.Collections.Generic.SortedSet<string>()
 						{
 							{{customHints}}

@@ -14,7 +14,7 @@ namespace UnitTests;
 [YaseriSerializable]
 internal sealed partial class TestObject
 {
-	[Constraints(Minimum = 0.0f, Maximum = 1.0f)]
+	[Constraints(Minimum = 0.0f, Maximum = 1.0f, Step = 0.01f)]
 	[PropertyName("perc")]
 	public float Percent { get; set; } = 0.5f;
 

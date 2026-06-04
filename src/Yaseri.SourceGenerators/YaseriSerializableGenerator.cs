@@ -86,6 +86,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 				string? format = null;
 				string? min = null;
 				string? max = null;
+				string? step = null;
 				List<string>? usage = null;
 
 				foreach (var attribute in property.GetAttributes())
@@ -128,6 +129,9 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 								case "Maximum":
 									max = kv.Value.ToCSharpString();
 									break;
+								case "Step":
+									step = kv.Value.ToCSharpString();
+									break;
 								default:
 									break;
 							}
@@ -150,6 +154,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 					CustomHints = usage,
 					ConstraintMin = min,
 					ConstraintMax = max,
+					ConstraintStep = step,
 				});
 			}
 
