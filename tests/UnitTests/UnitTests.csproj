@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Yaseri.Core\Yaseri.Core.csproj" />
     <ProjectReference Include="..\..\src\Yaseri.Json\Yaseri.Json.csproj" />
+    <ProjectReference Include="..\..\src\Yaseri.SourceGenerators\Yaseri.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>

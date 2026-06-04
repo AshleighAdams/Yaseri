@@ -21,6 +21,7 @@ public enum JsonTokenType
 	StartObject,
 	NameSeparator,
 	EndObject,
+	Comment,
 }
 
 public static class JsonTokenizerExtensions
