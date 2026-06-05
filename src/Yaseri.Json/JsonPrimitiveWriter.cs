@@ -1,6 +1,7 @@
 using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -12,6 +13,9 @@ public record struct JsonPrimitiveWriterOptions
 	public JsonPrimitiveWriterOptions() { }
 	public bool WriteTrailingCommas { get; set; } = true;
 	public bool Indent { get; set; } = true;
+	public string IndentationLiteral { get; set; } = "\t";
+	public string NewlineLiteral { get; set; } = "\n";
+	public string InlineNewlineLiteral { get; set; } = " ";
 }
 
 public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
@@ -25,10 +29,50 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 		var opts = options ?? new();
 		WriteTrailingCommas = opts.WriteTrailingCommas;
 		Indent = opts.Indent;
+		var indents = DoubleDoubleDoubleBytes(opts.IndentationLiteral);
+		OneIndentationLiteral = indents.one;
+		TwoIndentationLiterals = indents.two;
+		FourIndentationLiterals = indents.four;
+		EightIndentationLiterals = indents.eight;
+		NewlineLiteral = Utf8.GetBytes(opts.NewlineLiteral);
+		InlineNewlineLiteral = Utf8.GetBytes(opts.InlineNewlineLiteral);
+	}
+
+	private static (Memory<byte> one, Memory<byte> two, Memory<byte> four, Memory<byte> eight) DoubleDoubleDoubleBytes(string value)
+	{
+		var bytesForOne = Utf8.GetByteCount(value);
+		var eight = new byte[bytesForOne * 8];
+#if DEBUG
+		var count =
+#endif
+		Utf8.GetBytes(value, eight);
+#if DEBUG
+		Debug.Assert(count == bytesForOne);
+#endif
+		for (int i = 0; i < bytesForOne; i++)
+		{
+			eight[bytesForOne * 1 + i] = eight[i];
+			eight[bytesForOne * 2 + i] = eight[i];
+			eight[bytesForOne * 3 + i] = eight[i];
+			eight[bytesForOne * 4 + i] = eight[i];
+			eight[bytesForOne * 5 + i] = eight[i];
+			eight[bytesForOne * 6 + i] = eight[i];
+			eight[bytesForOne * 7 + i] = eight[i];
+		}
+
+		var mem = eight.AsMemory();
+		return (mem[..bytesForOne], mem[..(bytesForOne*2)], mem[..(bytesForOne * 4)], mem[..(bytesForOne * 8)]);
 	}
 
 	public bool WriteTrailingCommas { get; set; } = true;
 	public bool Indent { get; set; }
+
+	private Memory<byte> OneIndentationLiteral { get; }
+	private Memory<byte> TwoIndentationLiterals { get; }
+	private Memory<byte> FourIndentationLiterals { get; }
+	private Memory<byte> EightIndentationLiterals { get; }
+	private Memory<byte> NewlineLiteral { get; }
+	private Memory<byte> InlineNewlineLiteral { get; }
 
 	public long CurrentPosition => Stream.Position;
 	public bool ShouldWriteDefaultValues { get; set; }
@@ -58,11 +102,11 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 		{
 			if (starting || terminating)
 				return;
-			Stream.WriteByte((byte)' ');
+			Stream.Write(InlineNewlineLiteral.Span);
 		}
 		else
 		{
-			Stream.WriteByte((byte)'\n');
+			Stream.Write(NewlineLiteral.Span);
 			int remainingDepth = Depth;
 			if (terminating)
 				remainingDepth--;
@@ -72,19 +116,19 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 				{
 					default:
 					case >= 8:
-						Stream.Write("\t\t\t\t\t\t\t\t"u8);
+						Stream.Write(EightIndentationLiterals.Span);
 						remainingDepth -= 8;
 						break;
 					case >= 4:
-						Stream.Write("\t\t\t\t"u8);
+						Stream.Write(FourIndentationLiterals.Span);
 						remainingDepth -= 4;
 						break;
 					case >= 2:
-						Stream.Write("\t\t"u8);
+						Stream.Write(TwoIndentationLiterals.Span);
 						remainingDepth -= 2;
 						break;
 					case 1:
-						Stream.Write("\t"u8);
+						Stream.Write(OneIndentationLiteral.Span);
 						remainingDepth = 0;
 						break;
 				}
