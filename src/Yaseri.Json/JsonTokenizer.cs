@@ -128,13 +128,22 @@ public class JsonTokenizer
 				case (byte)'/':
 					if (TryReadExact("//"u8, ref range))
 					{
-						throw new NotImplementedException();
-						//continue;
+						var content = Content.Span;
+						while (Position < content.Length && content[Position] != '\n')
+							Position++;
+						if (Position < content.Length)
+							Position++; // consume the "\n"
+						continue;
 					}
 					else if (TryReadExact("/*"u8, ref range))
 					{
-						throw new NotImplementedException();
-						//continue;
+						var content = Content.Span;
+						var minEndPosition = content.Length - 2; // two chars
+						while (Position <= minEndPosition && content[Position] != '*' && content[Position] != '/')
+							Position++;
+						if (Position <= minEndPosition)
+							Position += 2; // consume the "*/"
+						continue;
 					}
 					errorMessage = "Unexpected char found";
 					return false;

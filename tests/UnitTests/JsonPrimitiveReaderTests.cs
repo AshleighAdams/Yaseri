@@ -336,4 +336,65 @@ public class JsonPrimitiveReaderTests
 		position.Should().Be(new Vector2(42.0f, 69.0f));
 		reader.TryReadEndObject().Should().BeTrue();
 	}
+
+	[Fact]
+	public void HandlesSingleLineCorrectly()
+	{
+		var json =
+			"""
+			// check comments at the begining of a file
+			[
+				// 1234, check single line comments are disabled
+				1337
+			]
+			// check comments at the end of a file
+			"""u8.ToArray();
+
+		var reader = new JsonPrimitiveReader(json, "test.json") as IPrimitiveReader;
+		reader.TryReadStartArray().Should().BeTrue();
+		reader.TryReadValue(out int val).Should().BeTrue();
+		val.Should().Be(1337);
+		reader.TryReadEndArray().Should().BeTrue();
+	}
+
+	[Fact]
+	public void HandlesMultilineLineCorrectly()
+	{
+		var json =
+			"""
+			/* check comments at the begining of a file /*
+			[
+				/*
+				1234, check single line comments are disabled
+				*/
+				1337
+			]
+			/* check comments at the end of a file */
+			"""u8.ToArray();
+
+		var reader = new JsonPrimitiveReader(json, "test.json") as IPrimitiveReader;
+		reader.TryReadStartArray().Should().BeTrue();
+		reader.TryReadValue(out int val).Should().BeTrue();
+		val.Should().Be(1337);
+		reader.TryReadEndArray().Should().BeTrue();
+	}
+
+	[Fact]
+	public void UnfinishedMultilineCommentHandledGracefully()
+	{
+		var json =
+			"""
+			[
+				1337
+			]
+			/* unfinished comment
+			"""u8.ToArray();
+
+		var reader = new JsonPrimitiveReader(json, "test.json") as IPrimitiveReader;
+		reader.TryReadStartArray().Should().BeTrue();
+		reader.TryReadValue(out int val).Should().BeTrue();
+		val.Should().Be(1337);
+		reader.TryReadEndArray().Should().BeTrue();
+		reader.TryReadStartObject().Should().BeFalse();
+	}
 }
