@@ -135,4 +135,20 @@ public class JsonPrimitiveSerializerTests
 
 		actualTokens.Count.Should().Be(expectedTokens.Count);
 	}
+
+	[Theory]
+	[InlineData(@"""\u0000""", "\u0000")]
+	[InlineData(@"""\u0010""", "\u0010")]
+	[InlineData(@"""\uFFFF""", "\uFFFF")]
+	// surrogate pairs, you can't encode the full unicode \u by \u, this checks
+	// that functions correctly
+	[InlineData(@"""\uD83E\uDD8A""", "\uD83E\uDD8A")]
+	public void HandlesUnicodeCodepoints(string json, string expectedStr)
+	{
+		var expected = Utf8.GetBytes(expectedStr);
+		var tokenizer = new JsonTokenizer(Encoding.UTF8.GetBytes(json));
+		tokenizer.TryReadToken(out var token, out _).Should().Be(true);
+		var actual = token.ReadUtf8String().ToArray();
+		actual.Should().BeEquivalentTo(expected);
+	}
 }

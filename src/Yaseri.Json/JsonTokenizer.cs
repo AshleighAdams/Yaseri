@@ -50,6 +50,7 @@ public static class JsonTokenizerExtensions
 }
 
 // https://www.ietf.org/rfc/rfc4627.txt
+// https://datatracker.ietf.org/doc/html/rfc8259
 public class JsonTokenizer
 {
 	public static string PrettyFormatError(string message, ReadOnlySpan<byte> contents, string filename, int position)
@@ -314,24 +315,24 @@ public class JsonTokenizer
 					case (byte)'t':
 						continue;
 					case (byte)'u':
-						if (i + 4 >= Content.Length)
+						if (i + 4 > Content.Length)
 						{
 							errorMessage = "Unexpected EOF in hex escape sequence";
 							return false;
 						}
 						for (int n = 0; n < 4; n++)
 						{
-							i++;
 							switch (content[i])
 							{
-								case > (byte)'0' and < (byte)'9':
-								case > (byte)'a' and < (byte)'f':
-								case > (byte)'A' and < (byte)'F':
+								case >= (byte)'0' and <= (byte)'9':
+								case >= (byte)'a' and <= (byte)'f':
+								case >= (byte)'A' and <= (byte)'F':
 									break;
 								default:
 									errorMessage = "Illegal character in hex escape sequence";
 									return false;
 							}
+							i++;
 						}
 						continue;
 					default:

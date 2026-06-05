@@ -34,6 +34,7 @@ public record struct JsonToken(JsonTokenType Type, Range Location, ReadOnlyMemor
 
 	public readonly ReadOnlyMemory<byte> ReadUtf8String()
 	{
+		var unicodeChars = string.Empty;
 		var contentMem = Source[Location][1..^1];
 
 		if (!NeedsUnescaping)
@@ -81,24 +82,55 @@ public record struct JsonToken(JsonTokenType Type, Range Location, ReadOnlyMemor
 						ms.WriteByte((byte)'\t');
 						continue;
 					case (byte)'u':
-						if (i + 4 >= content.Length)
-							throw new InvalidOperationException("Assertion failure: Unfinished escape sequence found?");
+						if (i + 4 > content.Length)
+							throw new InvalidOperationException("Unfinished escape sequence found?");
+
+						unicodeChars = string.Empty;
+					another_one:
+
+						ushort utf16Char = 0;
 						for (int n = 0; n < 4; n++)
 						{
-							n++;
-							switch (content[i + n])
+							utf16Char <<= 4; // move a nybble to the left
+							byte hexDigit = content[i + n];
+							switch (hexDigit)
 							{
-								case > (byte)'0' and < (byte)'9':
-								case > (byte)'a' and < (byte)'f':
-								case > (byte)'A' and < (byte)'F':
-									throw new NotImplementedException();
+								case >= (byte)'0' and <= (byte)'9':
+									utf16Char |= (byte)(hexDigit - (byte)'0');
+									break;
+								case >= (byte)'a' and <= (byte)'f':
+									utf16Char |= (byte)(10 + (hexDigit - (byte)'a'));
+									break;
+								case >= (byte)'A' and <= (byte)'F':
+									utf16Char |= (byte)(10 + (hexDigit - (byte)'A'));
+									break;
 								default:
 									throw new InvalidOperationException("Assertion failure: Illegal character in hex escape sequence?");
 							}
 						}
+
+						i += 4;
+						unicodeChars += unchecked((char)utf16Char);
+
+						// a single UTF-16 code point (i.e. encoded as \uFFFF) can span many 16 bit chars,
+						// so if we find another UTF-16 encoded char following, accumulate it together
+						// and then ask .NET to turn the (maybe multibyte) UTF-16 sequence into a
+						// UTF-8 sequence
+						if (
+							i + @"\uFFFF"u8.Length <= content.Length &&
+							content[i + 0] == (byte)'\\' &&
+							content[i + 1] == (byte)'u'
+						)
+						{
+							i += 2;
+							goto another_one;
+						}
+
+						var utf8Bytes = Utf8.GetBytes(unicodeChars);
+						ms.Write(utf8Bytes);
 						continue;
 					default:
-						throw new InvalidOperationException("Assertion failure: Invalid escape sequence?");
+						throw new InvalidOperationException("Invalid escape sequence?");
 				}
 			}
 			else

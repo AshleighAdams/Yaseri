@@ -7,6 +7,7 @@ using Yaseri;
 using Yaseri.Json;
 
 using Xunit;
+using System.Text;
 
 namespace UnitTests;
 
