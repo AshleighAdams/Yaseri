@@ -24,6 +24,8 @@ internal sealed partial class TestObject
 	[Format("text/json")]
 	public string SomeJson { get; set; } = "{null, true}";
 
+	public int? MaybeInt { get; set; } = null;
+
 	public IReadOnlyList<ArrayItem> CustomArray { get; set; } = Array.Empty<ArrayItem>();
 }
 
@@ -64,6 +66,7 @@ public class SourceGeneratorTests
 				"perc": 0.5,
 				"Cool": "MyFile.png",
 				"SomeJson": "{null, true}",
+				"MaybeInt": null,
 				"CustomArray": [
 					{"Thing": 1, "OtherThing": 2},
 					{"Thing": 3, "OtherThing": 4},
