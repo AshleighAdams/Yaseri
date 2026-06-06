@@ -36,7 +36,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 
 		string writeInline = "false";
 
-		foreach (var (typeDef, classDef) in receiver.CandidateTypes)
+		foreach (var (typeDef, classDef) in receiver.CandidateClassTypes)
 		{
 			if (typeDef.IsAbstract)
 			{
@@ -214,7 +214,9 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 	/// </summary>
 	internal class SyntaxReceiver : ISyntaxContextReceiver
 	{
-		public List<(INamedTypeSymbol typeSymbol, ClassDeclarationSyntax classDecl)> CandidateTypes { get; } = new();
+		public List<(INamedTypeSymbol typeSymbol, ClassDeclarationSyntax classDecl)> CandidateClassTypes { get; } = new();
+		public List<(INamedTypeSymbol typeSymbol, StructDeclarationSyntax structDecl)> CandidateStructTypes { get; } = new();
+		public List<(INamedTypeSymbol typeSymbol, EnumDeclarationSyntax enumDecl)> CandidateEnumTypes { get; } = new();
 
 		public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
 		{
@@ -226,7 +228,29 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 					.Any(ad => ad.AttributeClass?.ToDisplayString() == "Yaseri.Attributes.YaseriSerializableAttribute");
 
 				if (valid)
-					CandidateTypes.Add((symbol, classDeclarationSyntax));
+					CandidateClassTypes.Add((symbol, classDeclarationSyntax));
+			}
+
+			if (context.Node is StructDeclarationSyntax structDeclarationSyntax
+				&& structDeclarationSyntax.AttributeLists.Count > 0)
+			{
+				var symbol = context.SemanticModel.GetDeclaredSymbol(structDeclarationSyntax) as INamedTypeSymbol;
+				bool valid = symbol!.GetAttributes()
+					.Any(ad => ad.AttributeClass?.ToDisplayString() == "Yaseri.Attributes.YaseriSerializableAttribute");
+
+				if (valid)
+					CandidateStructTypes.Add((symbol, structDeclarationSyntax));
+			}
+
+			if (context.Node is EnumDeclarationSyntax enumDeclarationSyntax
+				&& enumDeclarationSyntax.AttributeLists.Count > 0)
+			{
+				var symbol = context.SemanticModel.GetDeclaredSymbol(enumDeclarationSyntax) as INamedTypeSymbol;
+				bool valid = symbol!.GetAttributes()
+					.Any(ad => ad.AttributeClass?.ToDisplayString() == "Yaseri.Attributes.YaseriSerializableAttribute");
+
+				if (valid)
+					CandidateEnumTypes.Add((symbol, enumDeclarationSyntax));
 			}
 
 			//if (context.Node is FieldDeclarationSyntax fieldDeclarationSyntax
