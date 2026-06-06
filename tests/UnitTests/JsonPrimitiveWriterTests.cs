@@ -215,4 +215,21 @@ public class JsonPrimitiveWriterTests
 
 		json.Should().Be(expected);
 	}
+
+	[Fact]
+	public void EscapesCorrectly()
+	{
+		using var jsonWriter = new JsonPrimitiveWriter();
+		IPrimitiveWriter writer = jsonWriter;
+
+		writer.WriteValue("Hello.\nWho wrote \"Hello world.\" in C:\\Hello.txt");
+
+		string json = jsonWriter.ToString();
+		string expected =
+			"""
+			"Hello.\nWho wrote \"Hello world.\" in C:\\Hello.txt"
+			""";
+
+		json.Should().Be(expected);
+	}
 }

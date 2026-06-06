@@ -405,7 +405,133 @@ public sealed class JsonPrimitiveWriter : IPrimitiveWriter, IDisposable
 
 		StartValue();
 		Stream.WriteByte((byte)'"');
-		Stream.Write(valueUtf8Str); // TODO: escape strings
+
+		var pos = 0;
+		var span = valueUtf8Str.AsSpan();
+
+		while (pos < span.Length)
+		{
+			var count = span[pos..].IndexOfAny("\"\\\b\f\n\r\t\x00\x01\x02\x03\x04\x05\x06\x07\x0b\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f"u8);
+			if (count < 0)
+			{
+				Stream.Write(span[pos..]);
+				break;
+			}
+			else if (count > 0)
+			{
+				Stream.Write(span[pos..(pos + count)]);
+				pos += count;
+			}
+
+			switch (span[pos])
+			{
+				case (byte)'"':
+					Stream.Write("\\\""u8);
+					break;
+				case (byte)'\\':
+					Stream.Write("\\\\"u8);
+					break;
+				case (byte)'\b':
+					Stream.Write("\\b"u8);
+					break;
+				case (byte)'\f':
+					Stream.Write("\\f"u8);
+					break;
+				case (byte)'\n':
+					Stream.Write("\\n"u8);
+					break;
+				case (byte)'\r':
+					Stream.Write("\\r"u8);
+					break;
+				case (byte)'\t':
+					Stream.Write("\\t"u8);
+					break;
+				case 0:
+					Stream.Write("\\u0000"u8);
+					break;
+				case 1:
+					Stream.Write("\\u0001"u8);
+					break;
+				case 2:
+					Stream.Write("\\u0002"u8);
+					break;
+				case 3:
+					Stream.Write("\\u0003"u8);
+					break;
+				case 4:
+					Stream.Write("\\u0004"u8);
+					break;
+				case 5:
+					Stream.Write("\\u0005"u8);
+					break;
+				case 6:
+					Stream.Write("\\u0006"u8);
+					break;
+				case 7:
+					Stream.Write("\\u0007"u8);
+					break;
+				case 11:
+					Stream.Write("\\u000b"u8);
+					break;
+				case 14:
+					Stream.Write("\\u000e"u8);
+					break;
+				case 15:
+					Stream.Write("\\u000f"u8);
+					break;
+				case 16:
+					Stream.Write("\\u0010"u8);
+					break;
+				case 17:
+					Stream.Write("\\u0011"u8);
+					break;
+				case 18:
+					Stream.Write("\\u0012"u8);
+					break;
+				case 19:
+					Stream.Write("\\u0013"u8);
+					break;
+				case 20:
+					Stream.Write("\\u0014"u8);
+					break;
+				case 21:
+					Stream.Write("\\u0015"u8);
+					break;
+				case 22:
+					Stream.Write("\\u0016"u8);
+					break;
+				case 23:
+					Stream.Write("\\u0017"u8);
+					break;
+				case 24:
+					Stream.Write("\\u0018"u8);
+					break;
+				case 25:
+					Stream.Write("\\u0019"u8);
+					break;
+				case 26:
+					Stream.Write("\\u001a"u8);
+					break;
+				case 27:
+					Stream.Write("\\u001b"u8);
+					break;
+				case 28:
+					Stream.Write("\\u001c"u8);
+					break;
+				case 29:
+					Stream.Write("\\u001d"u8);
+					break;
+				case 30:
+					Stream.Write("\\u001e"u8);
+					break;
+				case 31:
+					Stream.Write("\\u001f"u8);
+					break;
+				default:
+					throw new Exception("How did we get here? Unexpected char in WriteValue(string)");
+			}
+			pos++;
+		}
 		Stream.WriteByte((byte)'"');
 		CompleteValue();
 	}

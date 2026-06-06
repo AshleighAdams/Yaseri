@@ -52,7 +52,6 @@
   <PropertyGroup>
     <VerliteEnableShadowRepo>true</VerliteEnableShadowRepo>
     <VerliteMinimumVersion>0.1.0</VerliteMinimumVersion>
-    <!--<VerliteDirtyVersionBump>true</VerliteDirtyVersionBump>-->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Verlite.MsBuild" Version="2.7.0" PrivateAssets="All" />
