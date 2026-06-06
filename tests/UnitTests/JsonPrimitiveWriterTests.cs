@@ -217,7 +217,27 @@ public class JsonPrimitiveWriterTests
 	}
 
 	[Fact]
-	public void EscapesCorrectly()
+	public void EscapesKeysCorrectly()
+	{
+		using var jsonWriter = new JsonPrimitiveWriter();
+		IPrimitiveWriter writer = jsonWriter;
+
+		writer.WriteStartObject(writeInline: true);
+		writer.WriteKey("Hello.\nWho wrote \"Hello world.\" in C:\\Hello.txt"u8);
+		writer.WriteNull();
+		writer.WriteEndObject();
+
+		string json = jsonWriter.ToString();
+		string expected =
+			"""
+			{"Hello.\nWho wrote \"Hello world.\" in C:\\Hello.txt": null}
+			""";
+
+		json.Should().Be(expected);
+	}
+
+	[Fact]
+	public void EscapesValuesCorrectly()
 	{
 		using var jsonWriter = new JsonPrimitiveWriter();
 		IPrimitiveWriter writer = jsonWriter;
