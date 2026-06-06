@@ -32,5 +32,6 @@
   <Project Path="src/Yaseri.Core/Yaseri.Core.csproj" />
   <Project Path="src/Yaseri.Json/Yaseri.Json.csproj" />
   <Project Path="src/Yaseri.SourceGenerators/Yaseri.SourceGenerators.csproj" />
+  <Project Path="src/Yaseri/Yaseri.csproj" />
   <Project Path="tests/UnitTests/UnitTests.csproj" />
 </Solution>

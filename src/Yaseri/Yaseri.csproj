@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Yaseri</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Yaseri.Core\Yaseri.Core.csproj" />
+    <ProjectReference Include="..\Yaseri.Json\Yaseri.Json.csproj" />
+  </ItemGroup>
+
+</Project>
