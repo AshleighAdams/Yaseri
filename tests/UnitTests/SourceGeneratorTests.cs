@@ -27,6 +27,8 @@ internal sealed partial class TestObject
 	public int? MaybeInt { get; set; } = null;
 
 	public IReadOnlyList<ArrayItem> CustomArray { get; set; } = Array.Empty<ArrayItem>();
+
+	public IReadOnlyDictionary<string, DictItem> CustomDictionary { get; set; } = new SortedDictionary<string, DictItem>();
 }
 
 [YaseriSerializable(WriteInline = true)]
@@ -34,6 +36,12 @@ internal sealed partial class ArrayItem
 {
 	public int Thing { get; set; }
 	public int OtherThing { get; set; }
+}
+
+[YaseriSerializable(WriteInline = true)]
+internal sealed partial class DictItem
+{
+	public string Test { get; set; } = string.Empty;
 }
 
 public class SourceGeneratorTests
@@ -55,6 +63,11 @@ public class SourceGeneratorTests
 				new(){ Thing = 1, OtherThing = 2 },
 				new(){ Thing = 3, OtherThing = 4 },
 			},
+			CustomDictionary = new SortedDictionary<string, DictItem>()
+			{
+				["first"] = new DictItem() { Test = "1st" },
+				["second"] = new DictItem() { Test = "2nd" },
+			}
 		};
 
 		writer.WriteValue(testObj);
@@ -71,6 +84,10 @@ public class SourceGeneratorTests
 					{"Thing": 1, "OtherThing": 2},
 					{"Thing": 3, "OtherThing": 4},
 				],
+				"CustomDictionary": {
+					"first": {"Test": "1st"},
+					"second": {"Test": "2nd"},
+				},
 			}
 			""";
 
