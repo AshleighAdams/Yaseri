@@ -22,7 +22,7 @@ file class Encodings
 
 public partial interface IPrimitiveReader
 {
-	bool TryReadValue<T>(out IReadOnlyDictionary<string, string> value)
+	bool TryReadValue(out IReadOnlyDictionary<string, string> value)
 	{
 		ValueHint(Helper<string>.TypeHint);
 		if (!TryReadStartObject())
