@@ -22,6 +22,45 @@ file class Encodings
 
 public partial interface IPrimitiveReader
 {
+	bool TryReadValue<T>(out IReadOnlyDictionary<string, string> value)
+	{
+		ValueHint(Helper<string>.TypeHint);
+		if (!TryReadStartObject())
+		{
+			value = new SortedDictionary<string, string>();
+			LastError = "Expected array start";
+			return false;
+		}
+
+		var ret = new Dictionary<string, string>();
+		while (!TryReadEndObject())
+		{
+			if (!TryReadKey(out var key))
+			{
+				value = new SortedDictionary<string, string>();
+				LastError = "Expected key";
+				return false;
+			}
+
+			if (!TryReadValue(out string item))
+			{
+				value = new SortedDictionary<string, string>();
+				return false;
+			}
+
+			var keytStr = Encodings.Utf8.GetString(key.Span);
+			if (!ret.TryAdd(keytStr, item))
+			{
+				value = new SortedDictionary<string, string>();
+				LastError = "Duplicate key found";
+				return false;
+			}
+		}
+
+		value = ret;
+		return true;
+	}
+
 	bool TryReadValue<T>(out IReadOnlyDictionary<string, T> value)
 		where T : new()
 	{
@@ -65,6 +104,18 @@ public partial interface IPrimitiveReader
 
 public partial interface IPrimitiveWriter
 {
+	void WriteValue(in IReadOnlyDictionary<string, string> value)
+	{
+		ValueHint(Helper<string>.TypeHint);
+		WriteStartObject();
+		foreach (var (k, v) in value)
+		{
+			WriteKey(Encodings.Utf8.GetBytes(k));
+			WriteValue(v);
+		}
+		WriteEndObject();
+	}
+
 	void WriteValue<T>(in IReadOnlyDictionary<string, T> value)
 		where T : new()
 	{
