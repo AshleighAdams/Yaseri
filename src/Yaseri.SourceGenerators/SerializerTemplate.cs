@@ -81,6 +81,7 @@ public static class SerializerTemplate
 		string fullTypeName,
 		string typeName,
 		string writeInline,
+		string skipUnknown,
 		IEnumerable<PropertyMetadata> properties)
 	{
 		var readers = new StringBuilder();
@@ -171,6 +172,30 @@ public static class SerializerTemplate
 				""");
 		}
 
+		if (skipUnknown == "true")
+		{
+			readers.AppendLine(
+				"""
+
+						if (!reader.TrySkipValue())
+						{
+							value = @_YaseriContext.FailValue;
+							return false;
+						}
+						continue;
+				""");
+		}
+		else
+		{
+			readers.AppendLine(
+				$$"""
+
+						reader.LastError = $"{{typeName}}: Unknown key: {System.Text.Encoding.UTF8.GetString(key)}";
+						value = @_YaseriContext.FailValue;
+						return false;
+				""");
+		}
+
 		sb.AppendLine(
 			$$"""
 			#nullable enable
@@ -205,7 +230,7 @@ public static class SerializerTemplate
 					reader.ValueHint(@_YaseriContext.TypeHint);
 					if (!reader.TryReadStartObject())
 					{
-						reader.LastError = "{{typeName}} expected start object";
+						reader.LastError = "{{typeName}}: expected start object";
 						value = @_YaseriContext.FailValue;
 						return false;
 					}
@@ -215,7 +240,7 @@ public static class SerializerTemplate
 					{
 						if (!reader.TryReadKey(out var keyMem))
 						{
-							reader.LastError = "Expected key";
+							reader.LastError = "{{typeName}}: Expected key";
 							value = @_YaseriContext.FailValue;
 							return false;
 						}

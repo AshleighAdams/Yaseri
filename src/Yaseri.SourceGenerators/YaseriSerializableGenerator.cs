@@ -34,10 +34,11 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 		var attributeConstraints = context.Compilation.GetTypeByMetadataName("Yaseri.Attributes.ConstraintsAttribute")!;
 		var attributeObsolete = context.Compilation.GetTypeByMetadataName("System.ObsoleteAttribute")!;
 
-		string writeInline = "false";
-
 		foreach (var (typeDef, classDef) in receiver.CandidateClassTypes)
 		{
+			string writeInline = "false";
+			string skipUnknown = "false";
+
 			if (typeDef.IsAbstract)
 			{
 				context.ReportDiagnostic(Diagnostic.Create(
@@ -61,6 +62,9 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 				{
 					case "WriteInline":
 						writeInline = kv.Value.ToCSharpString();
+						break;
+					case "SkipUnknown":
+						skipUnknown = kv.Value.ToCSharpString();
 						break;
 					default:
 						break;
@@ -203,6 +207,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 				fullTypeName,
 				typeDef.Name,
 				writeInline,
+				skipUnknown,
 				propertiesList);
 
 			context.AddCode($"{typeDef.Name}.g.cs", sb.ToString());

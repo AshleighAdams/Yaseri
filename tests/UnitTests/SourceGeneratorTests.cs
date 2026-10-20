@@ -44,6 +44,19 @@ internal sealed partial class DictItem
 	public string Test { get; set; } = string.Empty;
 }
 
+
+[YaseriSerializable(SkipUnknown = true)]
+internal sealed partial class ClassWithSkipUnknown
+{
+	public string Test { get; set; } = string.Empty;
+}
+
+[YaseriSerializable]
+internal sealed partial class ClassWithoutSkipUnknown
+{
+	public string Test { get; set; } = string.Empty;
+}
+
 public class SourceGeneratorTests
 {
 	[Fact]
@@ -92,5 +105,25 @@ public class SourceGeneratorTests
 			""";
 
 		json.Should().Be(expected);
+	}
+
+	[Fact]
+	public void UnknownKeysCanBeSkipped()
+	{
+		var testJson =
+			"""
+			{
+				"Test": "Hello",
+				"Unknown": "World",
+			}
+			"""u8;
+
+		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out ClassWithSkipUnknown value).Should().BeTrue(reader.LastError);
+		value.Test.Should().Be("Hello");
+
+		reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out ClassWithoutSkipUnknown otherValue).Should().BeFalse();
+		reader.LastError.Should().Be("ClassWithoutSkipUnknown: Unknown key: Unknown");
 	}
 }
