@@ -8,7 +8,11 @@ public record struct PropertyMetadata
 	public string FullType { get; set; }
 	public string PropertyName { get; set; }
 	public string Key { get; set; }
-	public bool Obsolete { get; set; }
+	public bool IsObsolete { get; set; }
+	public bool IsRequired { get; set; }
+	public bool IsNullable { get; set; }
+	public bool AllowDuplicate { get; set; }
+	public bool IsReferenceType { get; set; }
 	public string? FormatHint { get; set; }
 	public List<string>? CustomHints { get; set; }
 	public string? ConstraintMin { get; set; }
@@ -80,6 +84,8 @@ public static class SerializerTemplate
 		string? baseClass,
 		string fullTypeName,
 		string typeName,
+		string ctorName,
+		bool generateDefaultCtor,
 		string writeInline,
 		string skipUnknown,
 		IEnumerable<PropertyMetadata> properties)
@@ -87,6 +93,8 @@ public static class SerializerTemplate
 		var readers = new StringBuilder();
 		var writers = new StringBuilder();
 		var hints = new StringBuilder();
+		var defineReadProperties = new StringBuilder();
+		var requiredPropertiesCheck = new StringBuilder();
 
 		var hintTypeName = fullTypeName.Substring("global::".Length);
 
@@ -141,32 +149,92 @@ public static class SerializerTemplate
 					""");
 			}
 
-			var localName = "@_" + prop.PropertyName.ToLowerInvariant();
+			var hasReadLocalName = "@hasRead_" + prop.PropertyName.ToLowerInvariant();
+			defineReadProperties.AppendLine(
+				$$"""
+					var {{hasReadLocalName}} = false;
+				""");
+
+			var checkDuplicate = string.Empty;
+			if (!prop.AllowDuplicate)
+				checkDuplicate =
+					$$"""
+						if ({{hasReadLocalName}})
+						{
+							reader.LastError = "Duplicate property {{prop.PropertyName}} found.";
+							success = false;
+							return;
+						}
+					""";
+
+			if (prop.IsRequired)
+				requiredPropertiesCheck.AppendLine(
+					$$"""
+						if (!{{hasReadLocalName}})
+						{
+							reader.LastError = "Required property {{prop.PropertyName}} missing.";
+							success = false;
+							return;
+						}
+					""");
+
+			var tryReadNull = string.Empty;
+			var nonNullableType = prop.FullType;
+			if (prop.IsNullable)
+			{
+				if (prop.FullType.EndsWith("?", System.StringComparison.Ordinal))
+					nonNullableType = prop.FullType.Substring(0, prop.FullType.Length - 1);
+				tryReadNull =
+					$$"""
+					if (reader.TryReadNull())
+						{{prop.PropertyName}} = null;
+					else
+					""";
+			}
+
 			readers.AppendLine(
 				$$"""
 						if (global::System.MemoryExtensions.SequenceEqual(key, {{prop.Key}}u8))
 						{
+							{{checkDuplicate}}
 							{{readHintsSb}}
-							if (!reader.TryReadValue(out {{prop.FullType}} {{localName}}))
+							{{tryReadNull}}
+							if (reader.TryReadValue(out {{nonNullableType}} prop))
+								{{prop.PropertyName}} = prop;
+							else
 							{
-								value = @_YaseriContext.FailValue;
-								return false;
+								success = false;
+								return;
 							}
-							ret.{{prop.PropertyName}} = {{localName}};
+
+							{{hasReadLocalName}} = true;
 							continue;
 						}
 				""");
 
 			// don't try to write out properties marked as obsolete
-			if (prop.Obsolete)
+			if (prop.IsObsolete)
 				continue;
 
+			var defaultValCheck = string.Empty;
+			if (!prop.IsRequired)
+				defaultValCheck =$"if (writeDefault || value.{prop.PropertyName} != @_YaseriContext.DefaultValue.{prop.PropertyName})";
+
+			var writeNull = string.Empty;
+			if (prop.IsNullable)
+				writeNull =
+					$"""
+					if (value.{prop.PropertyName} is null)
+						writer.WriteNull();
+					else
+					""";
 			writers.AppendLine(
 				$$"""
-						if (writeDefault || value.{{prop.PropertyName}} != @_YaseriContext.DefaultValue.{{prop.PropertyName}})
+						{{defaultValCheck}}
 						{
 							writer.WriteKey({{prop.Key}}u8);
 							{{writeHintsSb}}
+							{{writeNull}}
 							writer.WriteValue(value.{{prop.PropertyName}});
 						}
 				""");
@@ -179,8 +247,8 @@ public static class SerializerTemplate
 
 						if (!reader.TrySkipValue())
 						{
-							value = @_YaseriContext.FailValue;
-							return false;
+							success = false;
+							return;
 						}
 						continue;
 				""");
@@ -191,10 +259,17 @@ public static class SerializerTemplate
 				$$"""
 
 						reader.LastError = $"{{typeName}}: Unknown key: {System.Text.Encoding.UTF8.GetString(key)}";
-						value = @_YaseriContext.FailValue;
-						return false;
+						success = false;
+						return;
 				""");
 		}
+
+		var defaultCtorCode = string.Empty;
+		if (generateDefaultCtor)
+			defaultCtorCode =
+				$$"""
+					public {{ctorName}}(){}
+				""";
 
 		sb.AppendLine(
 			$$"""
@@ -202,6 +277,8 @@ public static class SerializerTemplate
 			#pragma warning disable CS8600
 			#pragma warning disable CS8601
 			#pragma warning disable CS0618
+			#pragma warning disable CS8604
+			#pragma warning disable CS8618
 
 			using Yaseri;
 			using Yaseri.Ducks;
@@ -210,8 +287,8 @@ public static class SerializerTemplate
 
 			file class _YaseriContext
 			{
-				public static readonly {{fullTypeName}} DefaultValue = new();
-				public static readonly {{fullTypeName}} FailValue = new();
+				public static readonly {{fullTypeName}} DefaultValue = new(default({{fullTypeName}}.YaseriCreateWithoutRequired));
+				public static readonly {{fullTypeName}} FailValue = new(default({{fullTypeName}}.YaseriCreateWithoutRequired));
 				public static PrimitiveTypeHint TypeHint = new()
 				{
 					TypeName = "{{hintTypeName.ToLiteral()}}",
@@ -223,33 +300,55 @@ public static class SerializerTemplate
 
 			{{visibility}} partial class {{typeName}} : global::Yaseri.IPrimitive<{{typeName}}>
 			{
-				public static bool TryReadValue(
+				{{defaultCtorCode}}
+
+				[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+				internal struct YaseriCreateWithoutRequired {}
+				[global::System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+				[global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+				internal {{ctorName}}(YaseriCreateWithoutRequired _){}
+
+				[global::System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+				private {{ctorName}}(
 					global::Yaseri.IPrimitiveReader reader,
-					out {{fullTypeName}} value)
+					ref bool success)
 				{
 					reader.ValueHint(@_YaseriContext.TypeHint);
 					if (!reader.TryReadStartObject())
 					{
 						reader.LastError = "{{typeName}}: expected start object";
-						value = @_YaseriContext.FailValue;
-						return false;
+						success = false;
+						return;
 					}
 
-					var ret = new {{fullTypeName}}();
+					{{defineReadProperties}}
+
 					while (!reader.TryReadEndObject())
 					{
 						if (!reader.TryReadKey(out var keyMem))
 						{
 							reader.LastError = "{{typeName}}: Expected key";
-							value = @_YaseriContext.FailValue;
-							return false;
+							success = false;
+							return;
 						}
 						var key = keyMem.Span;
-
+			
 						{{readers}}
 					}
-					value = ret;
-					return true;
+
+					{{requiredPropertiesCheck}}
+
+					success = true;
+				}
+
+				public static bool TryReadValue(
+					global::Yaseri.IPrimitiveReader reader,
+					out {{fullTypeName}} value)
+				{
+					bool success = false;
+					var newValue = new {{fullTypeName}}(reader, ref success);
+					value = success ? newValue : @_YaseriContext.FailValue;
+					return success;
 				}
 
 				bool global::Yaseri.IPrimitive<{{typeName}}>.InstancedTryReadValue(

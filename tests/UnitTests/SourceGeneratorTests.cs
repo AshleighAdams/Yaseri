@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection.PortableExecutable;
 
 using FluentAssertions;
 
@@ -55,6 +56,21 @@ internal sealed partial class ClassWithSkipUnknown
 internal sealed partial class ClassWithoutSkipUnknown
 {
 	public string Test { get; set; } = string.Empty;
+}
+
+[YaseriSerializable]
+internal sealed partial class TypeWithNullables
+{
+	public string? Test1 { get; set; }
+	public required string? Test2 { get; set; }
+}
+
+
+[YaseriSerializable]
+internal sealed partial class TypeWithRequired
+{
+	public required string Test1 { get; set; }
+	public required string? Test2 { get; set; }
 }
 
 public class SourceGeneratorTests
@@ -125,5 +141,90 @@ public class SourceGeneratorTests
 		reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
 		reader.TryReadValue(out ClassWithoutSkipUnknown otherValue).Should().BeFalse();
 		reader.LastError.Should().Be("ClassWithoutSkipUnknown: Unknown key: Unknown");
+	}
+
+	[Fact]
+	public void NullableFieldsDecodeNulls()
+	{
+		var testJson =
+			"""
+			{
+				"Test1": null,
+				"Test2": null,
+			}
+			"""u8;
+
+
+		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out TypeWithNullables value).Should().BeTrue(reader.LastError);
+		value.Test1.Should().BeNull();
+	}
+
+	[Fact]
+	public void NullableFieldsDecodeValues()
+	{
+		var testJson =
+			"""
+			{
+				"Test1": "hello",
+				"Test2": "world",
+			}
+			"""u8;
+
+
+		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out TypeWithNullables value).Should().BeTrue(reader.LastError);
+		value.Test1.Should().Be("hello");
+		value.Test2.Should().Be("world");
+	}
+
+	[Fact]
+	public void NullableFieldsHandleMissing()
+	{
+		var testJson =
+			"""
+			{
+				"Test2": null,
+			}
+			"""u8;
+
+
+		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out TypeWithNullables value).Should().BeTrue(reader.LastError);
+		value.Test1.Should().BeNull();
+		value.Test2.Should().BeNull();
+	}
+
+	[Fact]
+	public void RequiredNullableFieldsHandleMissing()
+	{
+		var testJson =
+			"""
+			{
+			}
+			"""u8;
+
+
+		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out TypeWithNullables value).Should().BeFalse();
+		reader.LastError.Should().Contain("Required");
+		reader.LastError.Should().Contain("Test2");
+	}
+
+	[Fact]
+	public void RequiredAlwaysWritten()
+	{
+		IPrimitiveWriter writer = new JsonPrimitiveWriter();
+		writer.WriteValue(new TypeWithNullables() { Test2 = null });
+
+		var json = writer.ToString();
+		var expected =
+			"""
+			{
+				"Test2": null,
+			}
+			""";
+
+		json.Should().Be(expected);
 	}
 }

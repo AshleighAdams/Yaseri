@@ -16,6 +16,7 @@ namespace UnitTests;
 [YaseriSerializable]
 internal sealed partial class RoundTripTestObject
 {
+
 	public float Percent { get; set; } = 0.5f;
 
 	public string Cool { get; set; } = "MyFile.png";
