@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Yaseri;
@@ -9,8 +10,18 @@ public partial class GenericPrimitive
 
 	private class Dispatcher<T> : IGenericPrimitive<T>
 	{
+		private static readonly Type PrimitiveType = typeof(IPrimitive<T>);
+		private static IPrimitive<T>? CreatePrimitive(
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces | DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+			Type type)
+		{
+			if (!type.IsAssignableTo(PrimitiveType))
+				return null;
+			return (IPrimitive<T>)RuntimeHelpers.GetUninitializedObject(type);
+		}
+
 		public static readonly IGenericPrimitive<T> Specialized = Instance as IGenericPrimitive<T> ?? new Dispatcher<T>();
-		public static readonly IPrimitive<T>? Primitive = RuntimeHelpers.GetUninitializedObject(typeof(T)) as IPrimitive<T>;
+		public static readonly IPrimitive<T>? Primitive = CreatePrimitive(typeof(T));
 		public bool TryReadValue(IPrimitiveReader reader, out T value)
 		{
 			throw new NotSupportedException($"GenericPrimitive does not support {typeof(T).Name}");

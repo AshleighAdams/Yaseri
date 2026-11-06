@@ -30,6 +30,8 @@ internal sealed partial class TestObject
 	public IReadOnlyList<ArrayItem> CustomArray { get; set; } = Array.Empty<ArrayItem>();
 
 	public IReadOnlyDictionary<string, DictItem> CustomDictionary { get; set; } = new SortedDictionary<string, DictItem>();
+
+	public IReadOnlyList<string> StrArray { get; set; } = Array.Empty<string>();
 }
 
 [YaseriSerializable(WriteInline = true)]
@@ -110,7 +112,8 @@ public class SourceGeneratorTests
 			{
 				["first"] = new DictItem() { Test = "1st" },
 				["second"] = new DictItem() { Test = "2nd" },
-			}
+			},
+			StrArray = new string[] { "hi" },
 		};
 
 		writer.WriteValue(testObj);
@@ -131,6 +134,9 @@ public class SourceGeneratorTests
 					"first": {"Test": "1st"},
 					"second": {"Test": "2nd"},
 				},
+				"StrArray": [
+					"hi",
+				],
 			}
 			""";
 
