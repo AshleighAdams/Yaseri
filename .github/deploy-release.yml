@@ -12,6 +12,8 @@ jobs:
     name: 'Build & Release'
     runs-on: ubuntu-latest
     permissions:
+      contents: write
+      packages: write
       id-token: write  # enable GitHub OIDC token issuance for this job
     steps:
     - *checkout
