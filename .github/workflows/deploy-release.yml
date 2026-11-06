@@ -16,6 +16,8 @@ jobs:
   build:
     name: Build & Release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # enable GitHub OIDC token issuance for this job
     steps:
     - uses: actions/checkout@v4
       with:
@@ -66,6 +68,13 @@ jobs:
           artifacts/*
 
 
+    - name: NuGet login (OIDC → temp API key)
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ secrets.NUGET_USER }} for your nuget.org username (profile name),
+          NOT your email address
+
     - name: Create Release
       run: |
         set -x
@@ -87,4 +96,4 @@ jobs:
         dotnet nuget push 'artifacts/*.nupkg' -k ${GITHUB_TOKEN} -s github --skip-duplicate --no-symbols
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        NUGETORG_TOKEN: ${{ secrets.NUGETORG_TOKEN }}
+        NUGETORG_TOKEN: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
