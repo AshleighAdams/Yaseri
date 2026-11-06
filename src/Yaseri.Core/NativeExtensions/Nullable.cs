@@ -1,3 +1,4 @@
+
 namespace Yaseri;
 
 file static class Helper<T>

@@ -14,4 +14,5 @@ public sealed class YaseriSerializableAttribute : Attribute
 
 	public bool WriteInline { get; set; }
 	public bool SkipUnknown { get; set; }
+	public bool AllowDuplicates { get; set; }
 }

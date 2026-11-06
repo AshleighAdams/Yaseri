@@ -38,6 +38,13 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 		{
 			string writeInline = "false";
 			string skipUnknown = "false";
+			bool allowDuplicates = false;
+
+			bool generateDefaultCtor = true;
+			if (classDef.Members.OfType<ConstructorDeclarationSyntax>().Any())
+				generateDefaultCtor = false;
+			else if (classDef.ParameterList is not null)
+				generateDefaultCtor = false;
 
 			if (typeDef.IsAbstract)
 			{
@@ -65,6 +72,9 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 						break;
 					case "SkipUnknown":
 						skipUnknown = kv.Value.ToCSharpString();
+						break;
+					case "AllowDuplicates":
+						allowDuplicates = kv.Value.ToCSharpString() == "true";
 						break;
 					default:
 						break;
@@ -153,7 +163,11 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 					PropertyName = property.Name,
 					Key = key ?? $"\"{property.Name.ToLiteral()}\"",
 					FullType = propType,
-					Obsolete = obsolete,
+					IsObsolete = obsolete,
+					IsRequired = property.IsRequired,
+					IsNullable = property.NullableAnnotation == NullableAnnotation.Annotated,
+					AllowDuplicate = allowDuplicates,
+					IsReferenceType = property.Type.IsReferenceType,
 					FormatHint = format,
 					CustomHints = usage,
 					ConstraintMin = min,
@@ -164,6 +178,7 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 
 			string declaringNamespace = typeDef.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
 			string fullTypeName = typeDef.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+			string ctorName = typeDef.Name;
 
 			//bool isSerializable = classDef.BaseList.Types
 			//	.Select(t => t.ToString());
@@ -206,6 +221,8 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 				baseClass,
 				fullTypeName,
 				typeDef.Name,
+				ctorName,
+				generateDefaultCtor,
 				writeInline,
 				skipUnknown,
 				propertiesList);
