@@ -14,7 +14,7 @@ file static class Helper<T>
 public partial interface IPrimitiveReader
 {
 	bool TryReadValue<T>(out T? value)
-		where T : struct
+		where T : unmanaged
 	{
 		ValueHint(Helper<T>.TypeHint);
 		if (TryReadNull())
@@ -37,7 +37,7 @@ public partial interface IPrimitiveReader
 public partial interface IPrimitiveWriter
 {
 	void WriteValue<T>(in T? value)
-		where T : struct
+		where T : unmanaged
 	{
 		ValueHint(Helper<T>.TypeHint);
 		if (value.HasValue)

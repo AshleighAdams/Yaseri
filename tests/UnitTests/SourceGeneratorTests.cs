@@ -73,6 +73,20 @@ internal sealed partial class TypeWithRequired
 	public required string? Test2 { get; set; }
 }
 
+[YaseriSerializable]
+internal sealed partial class NullableContainers
+{
+	public IReadOnlyList<StuffType>? CustomArray { get; set; }
+
+	public IReadOnlyDictionary<string, StuffType>? CustomDictionary { get; set; }
+}
+
+[YaseriSerializable]
+public partial class StuffType
+{
+	public required string Stuff { get; set; }
+}
+
 public class SourceGeneratorTests
 {
 	[Fact]

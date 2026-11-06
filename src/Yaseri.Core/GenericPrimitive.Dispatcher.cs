@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace Yaseri;
 
@@ -7,10 +8,9 @@ public partial class GenericPrimitive
 	private static readonly GenericPrimitive Instance = new();
 
 	private class Dispatcher<T> : IGenericPrimitive<T>
-		where T : new()
 	{
 		public static readonly IGenericPrimitive<T> Specialized = Instance as IGenericPrimitive<T> ?? new Dispatcher<T>();
-		public static readonly IPrimitive<T>? Primitive = new T() as IPrimitive<T>;
+		public static readonly IPrimitive<T>? Primitive = RuntimeHelpers.GetUninitializedObject(typeof(T)) as IPrimitive<T>;
 		public bool TryReadValue(IPrimitiveReader reader, out T value)
 		{
 			throw new NotSupportedException($"GenericPrimitive does not support {typeof(T).Name}");
@@ -23,7 +23,6 @@ public partial class GenericPrimitive
 	}
 
 	public static bool TryReadValue<T>(IPrimitiveReader reader, out T value)
-		where T : new()
 	{
 		if (Dispatcher<T>.Primitive is not null)
 			return Dispatcher<T>.Primitive.InstancedTryReadValue(reader, out value);
@@ -31,7 +30,6 @@ public partial class GenericPrimitive
 	}
 
 	public static void WriteValue<T>(IPrimitiveWriter writer, in T value)
-		where T : new()
 	{
 		if (Dispatcher<T>.Primitive is not null)
 		{
