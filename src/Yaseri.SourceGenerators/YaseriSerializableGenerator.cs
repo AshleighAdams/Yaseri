@@ -10,6 +10,19 @@ namespace Yaseri.SourceGenerators;
 [Generator]
 public partial class YaseriSerializableGenerator : ISourceGenerator
 {
+	private static readonly SymbolDisplayFormat FullyQualifiedNullableSymbolDisplayFormat = new(
+					SymbolDisplayGlobalNamespaceStyle.Included,
+					SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+					SymbolDisplayGenericsOptions.IncludeTypeParameters,
+					SymbolDisplayMemberOptions.None,
+					SymbolDisplayDelegateStyle.NameAndSignature,
+					SymbolDisplayExtensionMethodStyle.Default,
+					SymbolDisplayParameterOptions.None,
+					SymbolDisplayPropertyStyle.NameOnly,
+					SymbolDisplayLocalOptions.None,
+					SymbolDisplayKindOptions.None,
+					SymbolDisplayMiscellaneousOptions.UseSpecialTypes | SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
 	public void Initialize(GeneratorInitializationContext context)
 	{
 		//if (!System.Diagnostics.Debugger.IsAttached)
@@ -155,8 +168,8 @@ public partial class YaseriSerializableGenerator : ISourceGenerator
 
 				if (ignore)
 					continue;
-
-				var propType = property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+	
+				var propType = property.Type.ToDisplayString(FullyQualifiedNullableSymbolDisplayFormat);
 
 				propertiesList.Add(new()
 				{

@@ -67,6 +67,11 @@ internal sealed partial class TypeWithNullables
 	public required string? Test2 { get; set; }
 }
 
+[YaseriSerializable]
+internal sealed partial class TypeWithNullablesDictionaryValue
+{
+	public IReadOnlyDictionary<string, string?> Test3 { get; set; } = new Dictionary<string, string?>();
+}
 
 [YaseriSerializable]
 internal sealed partial class TypeWithRequired
@@ -178,6 +183,25 @@ public class SourceGeneratorTests
 		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
 		reader.TryReadValue(out TypeWithNullables value).Should().BeTrue(reader.LastError);
 		value.Test1.Should().BeNull();
+		value.Test2.Should().BeNull();
+	}
+
+	[Fact]
+	public void NullableFieldsDecodeNullsInDictionaries()
+	{
+		var testJson =
+			"""
+			{
+				"Test3": {
+					"Test3a": null,
+				}
+			}
+			"""u8;
+
+
+		IPrimitiveReader reader = new JsonPrimitiveReader(testJson.ToArray(), "test.json");
+		reader.TryReadValue(out TypeWithNullablesDictionaryValue value).Should().BeTrue(reader.LastError);
+		value.Test3["Test3a"].Should().BeNull();
 	}
 
 	[Fact]

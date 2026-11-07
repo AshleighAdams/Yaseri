@@ -17,6 +17,8 @@ public partial interface IPrimitiveReader
 {
 	bool TryReadValue<T>(out IReadOnlyList<T> value)
 	{
+		var nullable = IsNullable<T>.Value;
+
 		ValueHint(Helper<T>.TypeHint);
 		if (!TryReadStartArray())
 		{
@@ -28,7 +30,10 @@ public partial interface IPrimitiveReader
 		var ret = new List<T>();
 		while (!TryReadEndArray())
 		{
-			if (!GenericPrimitive.TryReadValue(this, out T item))
+			T item;
+			if (nullable && TryReadNull())
+				item = default!;
+			else if (!GenericPrimitive.TryReadValue(this, out item))
 			{
 				value = Array.Empty<T>();
 				return false;
@@ -46,10 +51,14 @@ public partial interface IPrimitiveWriter
 {
 	void WriteValue<T>(in IReadOnlyList<T> value)
 	{
+		var nullable = IsNullable<T>.Value;
 		ValueHint(Helper<T>.TypeHint);
 		WriteStartArray();
 		foreach (var item in value)
-			GenericPrimitive.WriteValue(this, item);
+			if (nullable && item is null)
+				WriteNull();
+			else
+				GenericPrimitive.WriteValue(this, item);
 		WriteEndArray();
 	}
 }
