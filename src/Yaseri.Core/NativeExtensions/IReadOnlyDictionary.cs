@@ -1,10 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Unicode;
 
 namespace Yaseri;
-
-// TODO: this should use an OrderedDictionary<TKey, TValue> when .NET is upgraded to >= 9
 
 file static class Helper<T>
 {
@@ -20,10 +17,13 @@ file class Encodings
 	public readonly static UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
 }
 
+// TODO: this should use an OrderedDictionary<TKey, TValue> when .NET is upgraded to >= 9
 public partial interface IPrimitiveReader
 {
 	bool TryReadValue<T>(out IReadOnlyDictionary<string, T> value)
 	{
+		var nullable = IsNullable<T>.Value;
+
 		ValueHint(Helper<T>.TypeHint);
 		if (!TryReadStartObject())
 		{
@@ -42,7 +42,10 @@ public partial interface IPrimitiveReader
 				return false;
 			}
 
-			if (!GenericPrimitive.TryReadValue(this, out T item))
+			T item;
+			if (nullable && TryReadNull())
+				item = default!;
+			else if (!GenericPrimitive.TryReadValue(this, out item))
 			{
 				value = new SortedDictionary<string, T>();
 				return false;
@@ -66,12 +69,18 @@ public partial interface IPrimitiveWriter
 {
 	void WriteValue<T>(in IReadOnlyDictionary<string, T> value)
 	{
+		var nullable = IsNullable<T>.Value;
+
 		ValueHint(Helper<T>.TypeHint);
 		WriteStartObject();
 		foreach (var (k, v) in value)
 		{
 			WriteKey(Encodings.Utf8.GetBytes(k));
-			GenericPrimitive.WriteValue(this, v);
+
+			if (nullable && v is null)
+				WriteNull();
+			else
+				GenericPrimitive.WriteValue(this, v);
 		}
 		WriteEndObject();
 	}
